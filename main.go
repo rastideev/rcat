@@ -10,12 +10,13 @@ import (
 
 func main() {
 	numberFlag := flag.Bool("n", false, "Prints the line numbers.")
-	// lineBreakNums := flag.Bool("b", false, "Don't print line numbers for empty lines.")
+	lineBreakNums := flag.Bool("b", false, "Don't print line numbers for empty lines.")
 	flag.Parse()
 
+	lineCount := 0
 	switch len(flag.Args()) {
 	case 0:
-		filePrinter(os.Stdin, *numberFlag)
+		filePrinter(os.Stdin, &lineCount, *numberFlag, *lineBreakNums)
 	case 1:
 		var input io.Reader
 		if flag.Arg(0) != "-" {
@@ -25,12 +26,12 @@ func main() {
 		} else {
 			input = os.Stdin
 		}
-		filePrinter(input, *numberFlag)
+		filePrinter(input, &lineCount, *numberFlag, *lineBreakNums)
 	default:
 		for _, arg := range flag.Args() {
 			file := fileSource(arg)
 			defer file.Close()
-			filePrinter(file, *numberFlag)
+			filePrinter(file, &lineCount, *numberFlag, *lineBreakNums)
 		}
 	}
 }
@@ -44,13 +45,12 @@ func fileSource(pathToFile string) *os.File {
 	return file
 }
 
-func filePrinter(input io.Reader, printLineNumbers bool) {
+func filePrinter(input io.Reader, lineCounter *int, printLineNumbers bool, noLineBreaks bool) {
 	scanner := bufio.NewScanner(input)
-	lineCounter := 0
 	for scanner.Scan() {
-		lineCounter++
-		if printLineNumbers {
-			fmt.Fprintln(os.Stdout, lineCounter, " ", scanner.Text())
+		if printLineNumbers || (len(scanner.Text()) != 0 && noLineBreaks) {
+			*lineCounter++
+			fmt.Fprintln(os.Stdout, *lineCounter, " ", scanner.Text())
 		} else {
 			fmt.Fprintln(os.Stdout, scanner.Text())
 		}
